@@ -89,6 +89,7 @@ for m = 1:num_piece
                 if t<=tact             %turn                        
                      Fan         =[Famx(jj);Famy(jj);Famz(jj);Fax(jj);Fay(jj);Faz(jj)]*t/tact;
                 end
+                
                 if (t>tact && t<=trel+tact)                     % release / maintenance  
                 Fan  =[Famx(jj);Famy(jj);Famz(jj);Fax(jj);Fay(jj);Faz(jj)];
                 end
@@ -98,14 +99,14 @@ for m = 1:num_piece
                 %equation 29 任意一个section \tau_n等于从该段开始驱动力的总和与该段的内力，再乘该段长度
                 % External Concentrated load
                 Fpn   =[Fpmx(jj);Fpmy(jj);Fpmz(jj);Fpx(jj);Fpy(jj);Fpz(jj)];
-                ECL_m   = Sm' * Fpn;      % equation 30 
+                ECL_m   = Sm' * Fpn;      % equation 30
         end
         
         GIM(6*m-5:6*m, 6*n-5:6*n)  = M_mn;   % Fill in the integrated block.
         GCM1(6*m-5:6*m, 6*n-5:6*n) = C1_mn;
         GCM2(6*m-5:6*m, 6*n-5:6*n) = C2_mn;
         Tau(6*n-5:6*n,1)           = Tau_m;
-        GM(6*n-5:6*n, 6)           = G_m* matrix_Adjoint(g_prec^-1)*Gra;  %equation 26
+        GM(6*n-5:6*n, 6)           = G_m;  %equation 26
         ECL(6*n-5:6*n,1)           = ECL_m;
     end
 end
