@@ -32,16 +32,16 @@ g_r              =[0 -1 0 0; 1 0 0 0; 0 0 1 0; 0 0 0 1];     % 惯性系与body 
 g_prec           =diag([1 1 1 1]); %Initial configuration
 eta_prec         =zeros(6,1);      %initial speed 
 
-num_piece = 2;
+num_piece = 2;  
 num_disc  = 20; % This should be big enough.
 N         = num_piece;
 
 GIM         = zeros(6*num_piece);        % mass matrix
 GCM1        = zeros(6*num_piece);        % Coriolis matrix 1
 GCM2        = zeros(6*num_piece);        % Coriolis matrix 2
-Tau         =zeros(6*num_npie,1);        % Internal force and actuation force L(F_a-F_i)
-GM          =zeros(6*num_npie,6);        % Gravitational matrix
-ECL         =zeros(6*num_npie,1);        % External Concentrated Load
+Tau         = zeros(6*num_npie,1);        % Internal force and actuation force L(F_a-F_i)
+GM          = zeros(6*num_npie,6);        % Gravitational matrix
+ECL         = zeros(6*num_npie,1);        % External Concentrated Load
 
 Xi          =z(1:6*num_npie,:);  
 Xidot       =z(6*num_npie+1:12*num_npie,:);
@@ -84,30 +84,31 @@ for m = 1:num_piece
                 
             end
             
-                % Actuation and internal load
-                
-                if t<=tact             %turn                        
-                     Fan         =[Famx(jj);Famy(jj);Famz(jj);Fax(jj);Fay(jj);Faz(jj)]*t/tact;
-                end
-                
-                if (t>tact && t<=trel+tact)                     % release / maintenance  
-                Fan  =[Famx(jj);Famy(jj);Famz(jj);Fax(jj);Fay(jj);Faz(jj)];
-                end
-                Fin   =Eps*(xin-xi_star)+Ipsi*xidotn;
-  
-                Tau_m = L*(Fan-Fin);   %equation 29 
-                %equation 29 任意一个section \tau_n等于从该段开始驱动力的总和与该段的内力，再乘该段长度
-                % External Concentrated load
-                Fpn   =[Fpmx(jj);Fpmy(jj);Fpmz(jj);Fpx(jj);Fpy(jj);Fpz(jj)];
-                ECL_m   = Sm' * Fpn;      % equation 30
+
         end
-        
+            % Actuation and internal load
+                
+            if t<=tact             %turn                        
+             Fan         =[Famx(jj);Famy(jj);Famz(jj);Fax(jj);Fay(jj);Faz(jj)]*t/tact;
+            end
+                
+            if (t>tact && t<=trel+tact)                     % release / maintenance  
+              Fan  =[Famx(jj);Famy(jj);Famz(jj);Fax(jj);Fay(jj);Faz(jj)];
+            end
+            Fin   =Eps*(xin-xi_star)+Ipsi*xidotn;
+  
+            Tau_m = L*(Fan-Fin);   %equation 29 
+            %equation 29 任意一个section \tau_n等于从该段开始驱动力的总和与该段的内力，再乘该段长度
+            % External Concentrated load
+            Fpn   =[Fpmx(jj);Fpmy(jj);Fpmz(jj);Fpx(jj);Fpy(jj);Fpz(jj)];
+            ECL_m   = Sm' * Fpn;      % equation 30
+            
         GIM(6*m-5:6*m, 6*n-5:6*n)  = M_mn;   % Fill in the integrated block.
         GCM1(6*m-5:6*m, 6*n-5:6*n) = C1_mn;
         GCM2(6*m-5:6*m, 6*n-5:6*n) = C2_mn;
-        Tau(6*n-5:6*n,1)           = Tau_m;
-        GM(6*n-5:6*n, 6)           = G_m;  %equation 26
-        ECL(6*n-5:6*n,1)           = ECL_m;
+        Tau(6*m-5:6*m,1)           = Tau_m;
+        GM(6*m-5:6*m, 6)           = G_m;  %equation 26
+        ECL(6*m-5:6*m,1)           = ECL_m;
     end
 end
 
