@@ -102,9 +102,9 @@ for m = 1:num_piece
                 
                 % generate Jacobian matrix
           
-                J_i = [];                                 %  equation 20
+                J_i = [];                                 %  Equation 20
              
-                    for j = i:-1:1                        %  non-zero items            
+                    for j = i:-1:1                        %  non-zero items in certain piece           
                         
                         item = intdAdjg_array(:,i-j+1);   %  prod
 
@@ -116,7 +116,7 @@ for m = 1:num_piece
                         J_i   = [J_i,item];
                     end
             
-                    for j=1:N-i                        %  zero items       
+                    for j=1:N-i                           %  zero items in certain piece      
 
                         item = zeros(6);
                        
