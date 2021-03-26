@@ -16,8 +16,9 @@ Poi      =0.5;                           % [-] 泊松比 0.5
 G        =E/(2*(1+Poi));                 % [Pa] 剪切模量
 R        =10e-3;                         % [m] 半径 10e-3
 L        =250e-3;                        % [m] 臂长 250e-3
-disc     =10;                            % 每个piece的disc数 
-X        =linspace(0,L,disc);            % [m] 构型曲线的坐标
+num_piece=2;                      % number of pieces 
+num_disc =20;                           
+X        =linspace(0,L,num_piece);        % [m] disc坐标
 A        =pi*R^2;                        % [m^2] 横截面积
 J        =pi*R^4/4;                      % [m^4] 横截面惯性矩（截面对y和z轴）
 I        =pi*R^4/2;                      % [m^4] 截面极惯性矩
@@ -37,11 +38,11 @@ M           =ro_arm*diag([I J J A A A]);       % 螺旋惯性矩阵
 %-------------------------------------------------------------------------
 % numerical setting
 
-time        =1;                     % [s]
-nsol        =time*10^2+1;            % a solution every centisecond关节数量
-tspan       =linspace(0,time,nsol);  % [s] time
-npie        =2;                      % number of pieces 
-dX          =L/npie/(disc-1);             % delta X
+time        =1;                          % [s]
+nsol        =time*10^2+1;                % a solution every centisecond关节数量
+tspan       =linspace(0,time,nsol);      % [s] time
+
+dX          =L/(num_disc-1);             % delta X
 
 %-------------------------------------------------------------------------
 % 驱动力 (body frame)
@@ -64,9 +65,9 @@ Fpmy        =0*[0 0 0 0];              % [Nm] bending torque
 Fpmz        =0*[0 0 0 0];              % [Nm] bending torque
 %-------------------------------------------------------------------------
 % observable
-g           =zeros(4*nsol,4*disc*npie);
-eta         =zeros(6*nsol,disc*npie);
-nstep       =1; 
+g           =zeros(4*nsol,4*num_disc*num_piece);
+eta         =zeros(6*nsol,num_disc*num_piece);
+nstep       =1;
 
 % global variable
 gv.ro_arm      =ro_arm;
@@ -80,8 +81,8 @@ gv.Eps         =Eps;
 gv.Ipsi        =Ipsi;
 gv.M           =M;
 gv.nsol        =nsol;
-gv.disc        =disc;
-gv.npie        =npie;
+gv.num_disc    =num_disc;
+gv.num_piece   =num_piece;
 gv.dX          =dX;
 gv.time        =time;
 gv.tspan       =tspan;
@@ -116,18 +117,89 @@ myopt          =odeset('RelTol',1e-4,'OutputFcn',@piecewise_observables);
 xi_0          =[0;0;0;1;0;0];  % given variable of the joint 
 xidot_0       =[0;0;0;0;0;0];
             
-ini_cond        =[repmat(xi_0',[1,npie]) repmat(xidot_0',[1,npie])];
+ini_cond        =[repmat(xi_0',[1,num_piece]) repmat(xidot_0',[1,num_piece])];
 %B = repmat(A,m,n)，B is consist of m×n A.
 % integrate
-[t,z]          =ode45(@piecewise_derivatives,tspan,ini_cond,myopt);
+% [t,z]          =ode45(@piecewise_derivatives,tspan,ini_cond,myopt);
+
+[t,z]          =ode45(@piecewise_CBA,tspan,ini_cond,myopt);
 
 toc
 % postproc
 disp('Post-processing')
 
-nsol=size(z,1);
 %r=size(A,1)返回矩阵A的行数， c=size(A,2) 返回矩阵A的列数
+tau       =zeros(nsol,num_piece);
+xci       =zeros(nsol,num_piece);
+k         =zeros(nsol,num_piece);
+q         =zeros(nsol,num_piece);
+p         =zeros(nsol,num_piece);
+r         =zeros(nsol,num_piece);
+for ii=1:num_piece
+    tau(:,ii) =z(:,6*(ii-1)+1);
+    xci(:,ii) =z(:,6*(ii-1)+2);
+    k(:,ii)   =z(:,6*(ii-1)+3);
+    q(:,ii)   =z(:,6*(ii-1)+4);
+    p(:,ii)   =z(:,6*(ii-1)+5);
+    r(:,ii)   =z(:,6*(ii-1)+6);
+end
+for ii=1:num_piece
+    % deformations
 
-piecewise_postprocsolo(t,z)
+    figure
+    plot(t,tau(:,ii))
+    grid on
+    title(strcat('torsion of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('tau [1/m]')
+    auxstr  =strcat('.\LAST RUN\torsione',num2str(ii),'.png');
+    print('-dpng',auxstr)
 
+    figure
+    plot(t,xci(:,ii))
+    grid on
+    title(strcat('curvature on y of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('xci [1/m]')
+    auxstr  =strcat('.\LAST RUN\curvature',num2str(ii),'_on_y.png');
+    print('-dpng',auxstr)
+
+    figure
+    plot(t,k(:,ii))
+    grid on
+    title(strcat('curvature on z of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('k [1/m]')
+    auxstr  =strcat('.\LAST RUN\curvature',num2str(ii),'_on_z.png');
+    print('-dpng',auxstr)
+
+    figure
+    plot(t,q(:,ii))
+    grid on
+    title(strcat('longitudinal strain of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('q [-]')
+    auxstr  =strcat('.\LAST RUN\longitudinal_strain',num2str(ii),'.png');
+    print('-dpng',auxstr)
+
+    figure
+    plot(t,p(:,ii))
+    grid on
+    title(strcat('tras y strain of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('p [-]')
+    auxstr  =strcat('.\LAST RUN\tras_y_strain',num2str(ii),'.png');
+    print('-dpng',auxstr)
+
+    figure
+    plot(t,r(:,ii))
+    grid on
+    title(strcat('tras z strain of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('r [-]')
+    auxstr  =strcat('.\LAST RUN\tras_z_strain',num2str(ii),'.png');
+    print('-dpng',auxstr)
+
+end
+% piecewise_postprocsolo(t,z)
 toc
