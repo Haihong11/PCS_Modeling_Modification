@@ -95,7 +95,6 @@ for iii = 1:N
     ADxin           =intdAdjgn_last*xidotn;
     eta_prec        =invAdjgn_last*(eta_prec+ADxin);  
     g_prec_list     = [g_prec_list, g_prec];          % 4x4(N+1)
-    g_prec_list
     eta_prec_list   = [eta_prec_list, eta_prec];      % 6x(N+1)
 end
 
@@ -121,19 +120,18 @@ for m = 1:num_piece
             G_m_i = zeros(6);
             
             for ii = 1:num_disc
-            
                 X1 = X1 + dX;              %  The actual position of disc.
                 
                 invAdjg_array  = [];
                 intdAdjg_array = [];
                 Adjg_array     = [];
                 
-          %  Express S and dotS in the equation
+                %  Express S and dotS in the equation
                     
                 invAdjg        = piecewise_invAdjoint(X1,theta_array(:,iii),xi_array(:,iii));   %%  Ad^{-1}_g 
-                    
+                
                 intdAdjg       = piecewise_ADJ(X1,theta_array(:,iii),xi_array(:,iii));          %%  T_g
-                    
+                
 %               Adjg           = piecewise_Adjoint(X1,theta_array(:,iii),xi_array(:,iii));
                     
                 invAdjg_array  = [invAdjg_array,invAdjg];
@@ -143,32 +141,31 @@ for m = 1:num_piece
 %               Adjg_array     = [Adjg_array,Adjg];
                      
             end
-
-                % generate Jacobian matrix
+            
+            % generate Jacobian matrix
           
-                J_i = [];                                  %  Equation 20
+            J_i = [];                                  %  Equation 20
                 
-                    for j = i:-1:1                         %  non-zero items in certain piece           
-                        
-                        item = intdAdjg_array(:,i-j+1);   
-                        
-                        for k = 1:j                       
-                            
-                            item = invAdjg_array(k)*item;  % prod
-                            
-                        end
-               
-                        J_i   = [J_i,item];                % From left to right
-                    end
-                    
-                    for j=1:N-i                            %  zero items in certain piece      
+            for j = i:-1:1                         %  non-zero items in certain piece           
 
-                        item = zeros(6);                   
-                        
-                        J_i = [J_i,item];                                  
-                        
-                    end 
-                    
+                item = intdAdjg_array(:,i-j+1);   
+
+                for k = 1:j                       
+
+                    item = invAdjg_array(k)*item;  % prod
+
+                end
+
+                J_i   = [J_i,item];                % From left to right
+            end
+
+            for j=1:N-i                            %  zero items in certain piece      
+
+                item = zeros(6);                   
+
+                J_i = [J_i,item];                                  
+
+            end 
                % generate the derivative of Jacobian matrix
           
 %                 dotJ_i = [];                                       %  Equation 20
@@ -194,22 +191,21 @@ for m = 1:num_piece
 %                         dotJ_i   = [dotJ_i,item];
 %                         
 %                     end
-                    
-                 Sm = J_i(m);                                      %  Compute S. where S is the function of the abscissi X
                  
-                 Sn = J_i(n);
-                 
+             Sm = J_i(m);                                      %  Compute S. where S is the function of the abscissi X
+
+             Sn = J_i(n);
 %                dotSn = dotJ_i(n);
-                         
-                 M_mn_i  = M_mn_i + Sm' * M* Sn * dX;                                                                 % equation 31 
-                 
-                 C1_mn_i = C1_mn_i + Sm'* matrix_coadj(eta_prec_list(:,i)+intdAdjg_array(:,i).*xidot_array(:,i))*M* Sn * dX;  % equation 32
-                                         
-                 C2_mn = C2_mn + Sm'* M * matrix_adj(intdAdjg_array(:,i).*xidot_array(:,i))*Sn * dX;        
+
+             M_mn_i  = M_mn_i + Sm' * M* Sn * dX;                                                                 % equation 31 
+
+             C1_mn_i = C1_mn_i + Sm'* matrix_coadj(eta_prec_list(:,i)+intdAdjg_array(:,i).*xidot_array(:,i))*M* Sn * dX;  % equation 32
+
+             C2_mn = C2_mn + Sm'* M * matrix_adj(intdAdjg_array(:,i).*xidot_array(:,i))*Sn * dX;        
 
 %                C2_mn_i = C2_mn_i + Sm'* M *dotSn * dX;                                                              % equation 33
-                 
-                 G_m_i   = G_m_i + Sm' * M * matrix_Adjoint(g_prec_list(:, 4*i-3:4*i)^-1)*dX;                                            % equation 35
+
+             G_m_i   = G_m_i + Sm' * M * matrix_Adjoint(g_prec_list(:, 4*i-3:4*i)^-1)*dX;                                            % equation 35
                  
         end
                  
