@@ -117,7 +117,7 @@ myopt          =odeset('RelTol',1e-4);
 xi_0          = [0;0;0;1;0;0];  % given variable of the joint 
 xidot_0       = [0;0;0;0;0;0];
             
-ini_cond      = [repmat(xi_0',[1,num_piece]) repmat(xidot_0',[1,num_piece])]
+ini_cond      = [repmat(xi_0',[1,num_piece]) repmat(xidot_0',[1,num_piece])];
 
 % integrate
 
