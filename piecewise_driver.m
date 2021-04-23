@@ -9,26 +9,28 @@ tic
 %-------------------------------------------------------------------------
 disp('Pre-processing')
 
-% 几何参数
-E        = 110e3;                         % [Pa] 杨氏模量
-mu       = 5e3;                           % [Pa*s] 粘度 5e3
-Poi      = 0.5;                           % [-] 泊松比 0.5
-G        = E/(2*(1+Poi));                 % [Pa] 剪切模量
-R        =10e-3;                          % [m] 半径 10e-3
-L        =250e-3;                         % [m] 臂长 250e-3
-num_piece=2;                              % number of pieces 
-num_disc =20;                           
-X        =linspace(0,L,num_piece+1);    
-A        =pi*R^2;                        % [m^2] cross-section area
-J        =pi*R^4/4;                      % [m^4] 横截面惯性矩（截面对y和z轴）
-I        =pi*R^4/2;                      % [m^4] 截面极惯性矩
+% Geometrical parameters
 
-% 未变形时的应变
+E        = 110e3;                          % [Pa] 杨氏模量
+mu       = 5e3;                            % [Pa*s] 粘度 5e3
+Poi      = 0.5;                            % [-] Poisson
+G        = E/(2*(1+Poi));                  % [Pa] 剪切模量
+R        = 10e-3;                          % [m] 半径 10e-3
+L        = 250e-3;                         % [m] 臂长 250e-3
+num_piece= 2;                              % number of pieces 
+num_disc = 20;                             % total discs
+%X        = linspace(0,L,num_disc);
+X        = linspace(0,L,num_piece+1);      % X    =linspace(0,L,num_disc);
+A        = pi*R^2;                         % [m^2] cross-section area
+J        = pi*R^4/4;                       % [m^4] 横截面惯性矩
+I        = pi*R^4/2;                       % [m^4] 截面极惯性矩
+
+% the undeformed strain twist
 xi_star    =[0;0;0;1;0;0];
 
 % dynamic parameters
 
-ro_arm      =1080;                             % [kg/m^3]
+ro_arm      =2000;                             % [kg/m^3]
 Gra         =[0;0;0;-9.81;0;0];                % [m/s^2]gravity acceleration twist（relative to spatial frame）
 Eps         =diag([G*I E*J E*J E*A G*A G*A]);  % stifness matrix
 Ipsi        =mu*diag([I 3*J 3*J 3*A A A]);     % viscosity matrix
@@ -41,7 +43,8 @@ M           =ro_arm*diag([I J J A A A]);       % screw inertia matrix
 time        =1;                          % [s]
 nsol        =time*10^2+1;                 
 tspan       =linspace(0,time,nsol);     
-dX          =L/num_piece/num_disc;             % length
+dX          =L/num_piece/(num_disc-1);             % length
+%dX          =L/(num_disc-1);
 
 %-------------------------------------------------------------------------
 % Actuation force (body frame)
@@ -118,7 +121,6 @@ xi_0          = [0;0;0;1;0;0];  % given variable of the joint
 xidot_0       = [0;0;0;0;0;0];
             
 ini_cond      = [repmat(xi_0',[1,num_piece]) repmat(xidot_0',[1,num_piece])];
-ini_cond
 % integrate
 
 [t,z]         =ode45(@piecewise_CBA,tspan,ini_cond,myopt);
@@ -127,71 +129,71 @@ toc
 % postproc
 disp('Post-processing')
 
-% s         =zeros(nsol,num_piece);
-% v         =zeros(nsol,num_piece);
-% k         =zeros(nsol,num_piece);
-% q         =zeros(nsol,num_piece);
-% p         =zeros(nsol,num_piece);
-% r         =zeros(nsol,num_piece);
-% 
-% for ii=1:num_piece
-%     
-%     s(:,ii)   =z(:,6*(ii-1)+1); 
-%     v(:,ii)   =z(:,6*(ii-1)+2);
-%     k(:,ii)   =z(:,6*(ii-1)+3);
-%     q(:,ii)   =z(:,6*(ii-1)+4);
-%     p(:,ii)   =z(:,6*(ii-1)+5);
-%     r(:,ii)   =z(:,6*(ii-1)+6);
-%     
-% end
-% 
-% for ii=1:num_piece
-% 
-%     figure
-%     plot(t,s(:,ii))
-%     grid on
-%     title(strcat('torsion of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('s [1/m]')
-%     print('-djpeg')
-% 
-%     figure
-%     plot(t,v(:,ii))
-%     grid on
-%     title(strcat('curvature on y of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('v [1/m]')
-%     print('-djpeg')
-% 
-%     figure
-%     plot(t,k(:,ii))
-%     grid on
-%     title(strcat('curvature on z of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('k [1/m]')
-%     print('-djpeg')
-% 
-%     figure
-%     plot(t,q(:,ii))
-%     grid on
-%     title(strcat('longitudinal strain of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('q [1]')
-%     print('-djpeg')
-% 
-%     figure
-%     plot(t,p(:,ii))
-%     grid on
-%     title(strcat('tras y strain of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('p [1]')
-%     print('-djpeg')
-% 
-%     figure
-%     plot(t,r(:,ii))
-%     grid on
-%     title(strcat('tras z strain of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('r [1]')
-%     print('-djpeg')
-% end
+s         =zeros(nsol,num_piece);
+v         =zeros(nsol,num_piece);
+k         =zeros(nsol,num_piece);
+q         =zeros(nsol,num_piece);
+p         =zeros(nsol,num_piece);
+r         =zeros(nsol,num_piece);
+
+for ii=1:num_piece
+    
+    s(:,ii)   =z(:,6*(ii-1)+1); 
+    v(:,ii)   =z(:,6*(ii-1)+2);
+    k(:,ii)   =z(:,6*(ii-1)+3);
+    q(:,ii)   =z(:,6*(ii-1)+4);
+    p(:,ii)   =z(:,6*(ii-1)+5);
+    r(:,ii)   =z(:,6*(ii-1)+6);
+    
+end
+
+for ii=1:num_piece
+
+    figure
+    plot(t,s(:,ii))
+    grid on
+    title(strcat('torsion of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('s [1/m]')
+    print('-djpeg')
+
+    figure
+    plot(t,v(:,ii))
+    grid on
+    title(strcat('curvature on y of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('v [1/m]')
+    print('-djpeg')
+
+    figure
+    plot(t,k(:,ii))
+    grid on
+    title(strcat('curvature on z of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('k [1/m]')
+    print('-djpeg')
+
+    figure
+    plot(t,q(:,ii))
+    grid on
+    title(strcat('longitudinal strain of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('q [1]')
+    print('-djpeg')
+
+    figure
+    plot(t,p(:,ii))
+    grid on
+    title(strcat('tras y strain of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('p [1]')
+    print('-djpeg')
+
+    figure
+    plot(t,r(:,ii))
+    grid on
+    title(strcat('tras z strain of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('r [1]')
+    print('-djpeg')
+end
