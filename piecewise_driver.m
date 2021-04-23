@@ -121,6 +121,10 @@ xi_0          = [0;0;0;1;0;0];  % given variable of the joint
 xidot_0       = [0;0;0;0;0;0];
             
 ini_cond      = [repmat(xi_0',[1,num_piece]) repmat(xidot_0',[1,num_piece])];
+<<<<<<< HEAD
+=======
+
+>>>>>>> d87da106292b4aa14471981e4739a9afd3d69ca7
 % integrate
 
 [t,z]         =ode45(@piecewise_CBA,tspan,ini_cond,myopt);
