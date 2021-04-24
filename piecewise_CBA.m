@@ -160,18 +160,19 @@ for m = 1:num_piece
             
             L_i_1 = X(i);                  %  index of X     X=linspace(0,L,num_piece);
             X1    = L_i_1;                 %  L_i_1=L_{i-1};
+            
             M_mn_i = zeros(6);
             C1_mn_i = zeros(6);
             C2_mn_i = zeros(6);
             G_m_i = zeros(6);
-               
+            
             for ii = 1:num_disc
+                
                 X1 = X1 + dX;              %  The actual position of disc.
                 
                 intdAdjg       = piecewise_ADJ(X1,theta_array(:,iii),xi_array(:,iii));          %%  T_g(X).
 
-        
-                disc_index = num_disc*i+ii
+                disc_index = num_disc*(i-1)+ii;
                 J_i = J_i_list(6*disc_index-5:6*disc_index,:);
                 
                 Sm = J_i(:,6*m-5:6*m);                                      %  Compute S. where S is the function of the abscissi X
@@ -179,7 +180,7 @@ for m = 1:num_piece
                 Sn = J_i(:,6*n-5:6*n);
                 %                dotSn = dotJ_i(n);
 
-                M_mn_i  = M_mn_i + Sm' * M * Sn * dX;                                                                 % equation 31 
+                M_mn_i  = M_mn_i + Sm' * M * Sn * dX;                                                                % equation 31 
 
                 C1_mn_i = C1_mn_i + Sm'* matrix_coadj(eta_prec_list(:,i)+intdAdjg.*xidot_array(:,i))*M* Sn * dX;  % equation 32
 
@@ -190,15 +191,13 @@ for m = 1:num_piece
                 G_m_i   = G_m_i + Sm' * M * matrix_Adjoint(g_prec_list(:, 4*i-3:4*i)^-1)*dX;                                            % equation 35
                 
             end
-        
+            
+            M_mn = M_mn + M_mn_i;
+            C1_mn = C1_mn + C1_mn_i;
+            C2_mn = C2_mn + C2_mn_i;
+            G_m = G_m + G_m_i;
         end
-                 
-
-        M_mn = M_mn + M_mn_i;
-        C1_mn = C1_mn + C1_mn_i;
-        C2_mn = C2_mn + C2_mn_i;
-        G_m = G_m + G_m_i;
-                 
+        
     	%   Actuation and internal load
 
         if t<=tact         %    turn                        
@@ -209,25 +208,23 @@ for m = 1:num_piece
           Fan   =[Famx(i);Famy(i);Famz(i);Fax(i);Fay(i);Faz(i)];
         end
 
-          Fin     = Eps*(xin-xi_star)+Ipsi*xidotn;
+        Fin     = Eps*(xin-xi_star)+Ipsi*xidotn;
 
-          Tau_m   = L*(Fan-Fin);                                      %    Equation 29
+        Tau_m   = L*(Fan-Fin);                                      %    Equation 29
 
         % Equation 29 任意一个section \tau_n等于从该段开始驱动力的总和与该段的内力，再乘该段长度
 
-          Fpn     = [Fpmx(i);Fpmy(i);Fpmz(i);Fpx(i);Fpy(i);Fpz(i)];   % External Concentrated load
+        Fpn     = [Fpmx(i);Fpmy(i);Fpmz(i);Fpx(i);Fpy(i);Fpz(i)];   % External Concentrated load
 
-          ECL_m     = Sm' *  Fpn;                                     % Equation 30
-                  
-     end       
-                       
+        ECL_m     = Sm' *  Fpn;                                     % Equation 30
+
         GIM(6*m-5:6*m, 6*n-5:6*n)  = M_mn;   %  Fill in the integrated block.
         GCM1(6*m-5:6*m, 6*n-5:6*n) = C1_mn;
         GCM2(6*m-5:6*m, 6*n-5:6*n) = C2_mn;
         Tau(6*m-5:6*m,1)           = Tau_m;  %  only related to the row    
         GM(6*m-5:6*m,1:6)          = G_m;    %  equation 26       
-        ECL(6*m-5:6*m,1)           = ECL_m;
-           
+        ECL(6*m-5:6*m,1)           = ECL_m;        
+    end
 end
 
 dotz1       = Xidot;

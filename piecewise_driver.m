@@ -38,9 +38,10 @@ M           =ro_arm*diag([I J J A A A]);       % screw inertia matrix
 %-------------------------------------------------------------------------
 % numerical setting
 
-time        =1;                          % [s]
-nsol        =time*10^2+1;                 
+time        =0.01;                          % [s]
+nsol        =time*10^2+2;                 
 tspan       =linspace(0,time,nsol);     
+% tspan = [0, 0.1];
 dX          =L/num_piece/num_disc;             % length
 
 %-------------------------------------------------------------------------
@@ -110,7 +111,7 @@ gv.nstep       =nstep;
 disp('Time-advancing')
 
 % myopt        =odeset('RelTol',1e-4,'OutputFcn',@piecewise_kinematics);
-myopt          =odeset('RelTol',1e-4);
+myopt          =odeset('RelTol',1e-3, 'AbsTol',1e-3);
 
 % initial conditions
 
@@ -126,72 +127,72 @@ ini_cond      = [repmat(xi_0',[1,num_piece]) repmat(xidot_0',[1,num_piece])];
 toc
 % postproc
 disp('Post-processing')
+%%
+s         =zeros(nsol,num_piece);
+v         =zeros(nsol,num_piece);
+k         =zeros(nsol,num_piece);
+q         =zeros(nsol,num_piece);
+p         =zeros(nsol,num_piece);
+r         =zeros(nsol,num_piece);
 
-% s         =zeros(nsol,num_piece);
-% v         =zeros(nsol,num_piece);
-% k         =zeros(nsol,num_piece);
-% q         =zeros(nsol,num_piece);
-% p         =zeros(nsol,num_piece);
-% r         =zeros(nsol,num_piece);
-% 
-% for ii=1:num_piece
-%     
-%     s(:,ii)   =z(:,6*(ii-1)+1); 
-%     v(:,ii)   =z(:,6*(ii-1)+2);
-%     k(:,ii)   =z(:,6*(ii-1)+3);
-%     q(:,ii)   =z(:,6*(ii-1)+4);
-%     p(:,ii)   =z(:,6*(ii-1)+5);
-%     r(:,ii)   =z(:,6*(ii-1)+6);
-%     
-% end
-% 
-% for ii=1:num_piece
-% 
-%     figure
-%     plot(t,s(:,ii))
-%     grid on
-%     title(strcat('torsion of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('s [1/m]')
-%     print('-djpeg')
-% 
-%     figure
-%     plot(t,v(:,ii))
-%     grid on
-%     title(strcat('curvature on y of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('v [1/m]')
-%     print('-djpeg')
-% 
-%     figure
-%     plot(t,k(:,ii))
-%     grid on
-%     title(strcat('curvature on z of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('k [1/m]')
-%     print('-djpeg')
-% 
-%     figure
-%     plot(t,q(:,ii))
-%     grid on
-%     title(strcat('longitudinal strain of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('q [1]')
-%     print('-djpeg')
-% 
-%     figure
-%     plot(t,p(:,ii))
-%     grid on
-%     title(strcat('tras y strain of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('p [1]')
-%     print('-djpeg')
-% 
-%     figure
-%     plot(t,r(:,ii))
-%     grid on
-%     title(strcat('tras z strain of piece',num2str(ii)))
-%     xlabel('t [s]')
-%     ylabel('r [1]')
-%     print('-djpeg')
-% end
+for ii=1:num_piece
+    
+    s(:,ii)   =z(:,6*(ii-1)+1); 
+    v(:,ii)   =z(:,6*(ii-1)+2);
+    k(:,ii)   =z(:,6*(ii-1)+3);
+    q(:,ii)   =z(:,6*(ii-1)+4);
+    p(:,ii)   =z(:,6*(ii-1)+5);
+    r(:,ii)   =z(:,6*(ii-1)+6);
+    
+end
+
+for ii=1:num_piece
+
+    figure
+    plot(t,s(:,ii))
+    grid on
+    title(strcat('torsion of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('s [1/m]')
+    print('-djpeg')
+
+    figure
+    plot(t,v(:,ii))
+    grid on
+    title(strcat('curvature on y of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('v [1/m]')
+    print('-djpeg')
+
+    figure
+    plot(t,k(:,ii))
+    grid on
+    title(strcat('curvature on z of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('k [1/m]')
+    print('-djpeg')
+
+    figure
+    plot(t,q(:,ii))
+    grid on
+    title(strcat('longitudinal strain of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('q [1]')
+    print('-djpeg')
+
+    figure
+    plot(t,p(:,ii))
+    grid on
+    title(strcat('tras y strain of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('p [1]')
+    print('-djpeg')
+
+    figure
+    plot(t,r(:,ii))
+    grid on
+    title(strcat('tras z strain of piece',num2str(ii)))
+    xlabel('t [s]')
+    ylabel('r [1]')
+    print('-djpeg')
+end
