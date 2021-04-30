@@ -3,7 +3,7 @@ global gv
 
 t
 
-% global variable
+%--------------global variable----------------%
 
 L           = gv.L;
 Eps         = gv.Eps;
@@ -11,8 +11,8 @@ Ipsi        = gv.Ipsi;
 M           = gv.M;       %  M    =   ro_arm*diag([I J J A A A]); % mass matrix of the disc
 xi_star     = gv.xi_star;
 Gra         = gv.Gra;
-dX          = gv.dX;      %  dX   =   L/(num_disc-1);
-X           = gv.X;       %   X   =   linspace(0,L,num_piece+1);        % [m]
+dX          = gv.dX;      %  dX   =   L/num_piece/num_disc;
+X           = gv.X;       % [m] X =   linspace(0,L,num_piece+1); end point
 tact        = gv.tact;    %  loading time
 trel        = gv.trel;    %  relaxing time
 Fax         = gv.Fax;
@@ -36,7 +36,7 @@ num_disc    = gv.num_disc;
 % Code for getting parameters. 
                   
 N           = num_piece;
-GIM         = zeros(6*num_piece);        % Generalized mass matrix
+GIM         = zeros(6*num_piece);        % Generalized inertia matrix
 GCM1        = zeros(6*num_piece);        % Generalized Coriolis matrix 1
 GCM2        = zeros(6*num_piece);        % Generalized Coriolis matrix 2
 Tau         = zeros(6*num_piece,1);      % Internal force and actuation force L(F_a-F_i)
@@ -49,10 +49,10 @@ Xi          = z(1:6*num_piece);          % strain twist
 Xidot       = z(6*num_piece+1:12*num_piece);            % derivative of strain
 g_r         = [0 -1 0 0; 1 0 0 0; 0 0 1 0; 0 0 0 1];    % the map between the spatial frame and the base frame
 
-% g (w.r.t initial frame) and eta (w.r.t body frame) of the beginning of every piece
+% g (w.r.t initial frame) and eta (w.r.t body frame) of the beginning of each piece
 
 g_pre       = diag([1 1 1 1]);                          % initial configuration  
-eta_pre     = zeros(6,1);                               % initial speed
+eta_pre     = zeros(6,1);                               % initial velocity
 
 g_pre_list   = [];                                       
 
@@ -64,12 +64,12 @@ xi_array    = [];
 theta_array = [];
 xidot_array = [];
 
-% Pre-Compute xi and theta for each piece.
+% Pre-Compute xi and theta for each piece. Pre-Compute g and eta for each disc %%
 
-for iii = 1:N
+for i = 1:N
       
-    xin         = Xi(6*(iii-1)+1:6*(iii-1)+6,:);     % xi and theta in centain section           
-    xidotn      = Xidot(6*(iii-1)+1:6*(iii-1)+6,:);           
+    xin         = Xi(6*(i-1)+1:6*(i-1)+6,:);     % xi and theta in centain section           
+    xidotn      = Xidot(6*(i-1)+1:6*(i-1)+6,:);           
     kn          = xin(1:3); 
     
     thetan      = sqrt(kn'*kn);
@@ -77,7 +77,7 @@ for iii = 1:N
     xidot_array = [xidot_array,xidotn];
     theta_array = [theta_array,thetan];
 
-    X1 = X(iii);                                     % the beginning of abscissa of every piece
+    X1 = X(i);                                     % the beginning of abscissa of each piece
     
     for ii=1:num_disc
         
@@ -87,24 +87,22 @@ for iii = 1:N
         
         intdAdjg   = piecewise_ADJ(X1,thetan,xin);        % T_g
         
-        g(4*(nstep-1)+1:4*(nstep-1)+4,4*(iii-1)*num_disc+4*(ii-1)+1:4*(iii-1)*num_disc+4*(ii-1)+4)... 
+        g(4*(nstep-1)+1:4*(nstep-1)+4,4*(i-1)*num_disc+4*(ii-1)+1:4*(i-1)*num_disc+4*(ii-1)+4)... 
                    = g_r*g_pre*piecewise_expmap(X1,thetan,xin);  %     
         
-        eta(6*(nstep-1)+1:6*(nstep-1)+6,(iii-1)*num_disc+ii)... 
+        eta(6*(nstep-1)+1:6*(nstep-1)+6,(i-1)*num_disc+ii)... 
                    = invAdjg*(eta_pre+intdAdjg*xidotn);          %
         
     end
-    
-    invAdjgn_next   = piecewise_invAdjoint(X(iii+1),thetan,xin);
-    intdAdjgn_next  = piecewise_ADJ(X(iii+1),thetan,xin);
-    g_pre           = g_pre*piecewise_expmap(X(iii+1),thetan,xin);
-    eta_pre         = invAdjgn_next*(eta_pre+intdAdjgn_next*xidotn);  
-    g_pre_list      = [g_pre_list, g_pre];                     % 4x4(N+1)?
-    eta_pre_list    = [eta_pre_list, eta_pre];                 %  6x(N+1)?
-    
+       
+    invAdjg_next   = piecewise_invAdjoint(X(i+1),thetan,xin);
+    intdAdjg_next  = piecewise_ADJ(X(i+1),thetan,xin);
+    g_pre          = g_pre*piecewise_expmap(X(i+1),thetan,xin);
+    eta_pre        = invAdjg_next*(eta_pre+intdAdjg_next*xidotn);  
+    g_pre_list     = [g_pre_list, g_pre];                     % 4x4(N+1)?  4x4N
+    eta_pre_list   = [eta_pre_list, eta_pre];                 %  6x(N+1)?  6xN
+      
 end
-
-gv.nstep         =nstep+1;
 
 % Compute Jacobian before actual using it.
 
@@ -112,7 +110,7 @@ J_i_list = [];                     % Save Jacobian matrix of all discs
 
 J_pre    = zeros(6,6*num_piece);   % initial Jacobian matrix
 
-for i = 1:N                      
+for i = 1:N                     
             
     L_i_1 = X(i);                  % index of X     X=linspace(0,L,num_piece+1);
     X1    = L_i_1;                 % L_i_1=L_{i-1};
@@ -152,7 +150,7 @@ end
 
 % Compute the derivative of Jacobian before actual using it.
 
-% dotJ_i_list = [];                     % Save Jacobian matrix of all discs
+% dotJ_i_list = [];                     % Save derivative of Jacobian matrix of all discs
 % 
 % dotJ_pre    = zeros(6,6*num_piece);   % initial Jacobian matrix
 % 
@@ -165,7 +163,7 @@ end
 %     adj_eta_array   = [];
 %     
 %     for ii = 1:num_disc
-%         
+%     
 %         X1             = X1 + dX;                                                   %  The actual position of disc.
 % 
 %         Adjg           = piecewise_Adjoint(X1,theta_array(:,i),xi_array(:,i));      %  Ad^_g(X).
@@ -198,10 +196,10 @@ end
 %     end   
 % end
 
-% CBA.
+% Composite Body Algorithm (CBA).
 
 for m = 1:num_piece 
-  
+    
     for n = 1:num_piece 
     
         M_mn   = zeros(6);
@@ -224,15 +222,19 @@ for m = 1:num_piece
                 
                 X1         = X1 + dX;     %  The actual position of disc.
                 
-                intdAdjg   = piecewise_ADJ(X1,theta_array(:,i),xi_array(:,i));          %%  T_g(X).
+                intdAdjg   = piecewise_ADJ(X1,theta_array(:,i),xi_array(:,i));  %  T_g(X).
                 
+                 g_i       = piecewise_expmap(X1,theta_array(:,i),xi_array(:,i));
+                 
                 disc_index = num_disc*(i-1)+ii;
                 
                 J_i        = J_i_list(6*disc_index-5:6*disc_index,:);
                 
-                Sm         = J_i(:,6*m-5:6*m);          %  Compute S. where S is the function of the abscissi X
+                Sm         = J_i(:,6*m-5:6*m);            %  Compute S. where S is the function of the abscissi X
                 
                 Sn         = J_i(:,6*n-5:6*n);
+                
+%               dotSn      = dotJ_i(:,6*n-5:6*n);
                               
                 M_mn_i     = M_mn_i + Sm' * M * Sn * dX;                                                                % equation 31 
                 
@@ -242,33 +244,32 @@ for m = 1:num_piece
                 
     %           C2_mn_i    = C2_mn_i + Sm'* M *dotSn * dX;                                                               % equation 33
                 
-                G_m_i      = G_m_i + Sm' * M * matrix_Adjoint(g_pre_list(:, 4*i-3:4*i)^-1)*dX;                                            % equation 35
+                G_m_i      = G_m_i + Sm' * M * matrix_Adjoint((g_pre_list(:, 4*i-3:4*i)*g_i)^-1)*dX;                     % g is disc                                         % equation 35
                 
             end
-                        
+            
             M_mn  = M_mn  + M_mn_i;
             C1_mn = C1_mn + C1_mn_i;
             C2_mn = C2_mn + C2_mn_i;
             G_m   = G_m  + G_m_i;
         
         end
-
-                 
+          
     	%  Actuation and Internal Load
 
         if t<=tact                                                    % turn                        
           Fan         =[Famx(i);Famy(i);Famz(i);Fax(i);Fay(i);Faz(i)]*t/tact;
         end
 
-        if (t>tact && t<=trel+tact)                                   % release / maintenance  
+        if (t>tact && t<=trel+tact)                                % release / maintenance  
           Fan   =[Famx(i);Famy(i);Famz(i);Fax(i);Fay(i);Faz(i)];
         end
 
         Fin     = Eps*(xin-xi_star)+Ipsi*xidotn;
-
-        Tau_m   = L*(Fan-Fin);                                        %    Equation 29  control quantity
-          
-        % Equation 29 任意一个section \tau_n等于从该段开始驱动力的总和与该段的内力，再乘该段长度
+        
+        % Equation 29  \tau_n = L*(Fan-Fin)
+        
+        Tau_m   = L*(Fan-Fin);                                      % Equation 29  control quantity      
 
         Fpn     = [Fpmx(i);Fpmy(i);Fpmz(i);Fpx(i);Fpy(i);Fpz(i)];   % External Concentrated load
 
@@ -287,18 +288,20 @@ for m = 1:num_piece
     
 end
 
+%-----State equation------%
+
 dotz1       = Xidot;
 dotz2       = GIM^-1*(Tau+GM*matrix_Adjoint(g_r^-1)*Gra+ECL-(GCM1+GCM2)*Xidot);
 dz          = [dotz1;dotz2];
 
 gv.g     = g;
 gv.eta   = eta;
-% gv.nstep = nstep+1;
-gv.GIM   = GIM;   % Generalized mass matrix
-gv.GM    = GM;    % Gravitational matrix
-gv.GCM1  = GCM1;  % Generalized Coriolis matrix 1
-gv.GCM2  = GCM2;  % Generalized Coriolis matrix 2
-gv.Tau   = Tau;   % Internal force and actuation force L(F_a-F_i)
-gv.ECL   = ECL;   % External Concentrated Load
+gv.nstep = nstep+1;
+gv.GIM   = GIM;    % Generalized inertia matrix
+gv.GM    = GM;     % Gravitational matrix
+gv.GCM1  = GCM1;   % Generalized Coriolis matrix 1
+gv.GCM2  = GCM2;   % Generalized Coriolis matrix 2
+gv.Tau   = Tau;    % Internal force and actuation force L(F_a-F_i)
+gv.ECL   = ECL;    % External Concentrated Load
 
 end
